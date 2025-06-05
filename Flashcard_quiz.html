@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basketball Quiz</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+            width: 400px;
+        }
+
+        .flashcard {
+            background-color: #e9ecef;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            word-wrap: break-word;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        #showAnswerBtn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #nextBtn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        #addCardBtn {
+            background-color: #6c757d;
+            color: white;
+            margin-top: 15px;
+        }
+
+        #answerInput {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 80%;
+            box-sizing: border-box;
+        }
+
+        #score {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .add-card-modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        .add-card-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+            border-radius: 8px;
+            text-align: left;
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .add-card-content label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .add-card-content input[type=text] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .add-card-content button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .add-card-content button:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="flashcard" id="question">Welcome to the Basketball Quiz!</div>
+        <input type="text" id="answerInput" placeholder="Your Answer">
+        <div class="controls">
+            <button id="showAnswerBtn">Show Answer</button>
+            <button id="nextBtn" disabled>Next Question</button>
+        </div>
+        <button id="addCardBtn">Add Question</button>
+        <div id="score">Score: 0</div>
+
+        <div id="addCardModal" class="add-card-modal">
+            <div class="add-card-content">
+                <span class="close-button">&times;</span>
+                <h2>Add New Question</h2>
+                <label for="newQuestion">Question:</label>
+                <input type="text" id="newQuestion">
+                <label for="newAnswer">Answer:</label>
+                <input type="text" id="newAnswer">
+                <button id="saveCardBtn">Save Question</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questionDiv = document.getElementById('question');
+        const answerInput = document.getElementById('answerInput');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const addCardBtn = document.getElementById('addCardBtn');
+        const scoreDiv = document.getElementById('score');
+        const addCardModal = document.getElementById('addCardModal');
+        const closeButton = document.querySelector('.close-button');
+        const saveCardBtn = document.getElementById('saveCardBtn');
+        const newQuestionInput = document.getElementById('newQuestion');
+        const newAnswerInput = document.getElementById('newAnswer');
+
+        let flashcards = [
+            { question: "How many points is a free throw worth in basketball?", answer: "One" },
+            { question: "What is the name of the professional basketball league in North America?", answer: "NBA" },
+            { question: "How many players are on a basketball team on the court at one time?", answer: "Five" },
+            { question: "What is it called when a player takes too many steps with the ball without dribbling?", answer: "Traveling" },
+            { question: "Who is often referred to as 'King James'?", answer: "LeBron James" },
+            { question: "What is the term for a successful shot made from behind the three-point line?", answer: "Three-pointer" },
+            { question: "What is the object of the game of basketball?", answer: "Score points" },
+            { question: "What is the name of the championship series of the NBA?", answer: "Finals" },
+            { question: "How long is a regulation NBA game in minutes?", answer: "Forty-eight" },
+            { question: "What part of the body should a player use to dribble the ball?", answer: "Hand" }
+        ];
+        let currentCardIndex = 0;
+        let score = 0;
+        let answerVisible = false;
+
+        function showCard() {
+            answerVisible = false;
+            answerInput.value = '';
+            if (flashcards.length > 0) {
+                questionDiv.textContent = flashcards[currentCardIndex].question;
+                showAnswerBtn.textContent = 'Show Answer';
+                nextBtn.textContent = 'Next Question';
+                nextBtn.disabled = true;
+            } else {
+                questionDiv.textContent = 'No questions added yet. Click "Add Question" to start.';
+                showAnswerBtn.disabled = true;
+                nextBtn.disabled = true;
+            }
+        }
+
+        function showAnswer() {
+            if (flashcards.length > 0) {
+                answerVisible = true;
+                questionDiv.textContent = flashcards[currentCardIndex].answer;
+                showAnswerBtn.textContent = 'Next';
+                nextBtn.disabled = false;
+            }
+        }
+
+        function nextCard() {
+            if (flashcards.length > 0) {
+                const userAnswer = answerInput.value.trim().toLowerCase();
+                const correctAnswer = flashcards[currentCardIndex].answer.toLowerCase();
+                if (answerVisible) {
+                    if (userAnswer === correctAnswer) {
+                        score++;
+                    }
+                    scoreDiv.textContent = `Score: ${score}`;
+                    currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+                    showCard();
+                } else {
+                    showAnswer(); // If "Next Question" is clicked before showing the answer
+                }
+            }
+        }
+
+        function openAddCardModal() {
+            addCardModal.style.display = "block";
+        }
+
+        function closeAddCardModal() {
+            addCardModal.style.display = "none";
+            newQuestionInput.value = '';
+            newAnswerInput.value = '';
+        }
+
+        function saveNewCard() {
+            const newQuestion = newQuestionInput.value.trim();
+            const newAnswer = newAnswerInput.value.trim();
+            if (newQuestion && newAnswer) {
+                flashcards.push({ question: newQuestion, answer: newAnswer });
+                closeAddCardModal();
+                if (flashcards.length === 1) {
+                    showCard(); // Show the first card if it's the only one now
+                    showAnswerBtn.disabled = false;
+                    nextBtn.disabled = true;
+                }
+            } else {
+                alert("Question and answer cannot be empty.");
+            }
+        }
+
+        showAnswerBtn.addEventListener('click', () => {
+            if (showAnswerBtn.textContent === 'Show Answer') {
+                showAnswer();
+            } else {
+                nextCard();
+            }
+        });
+
+        nextBtn.addEventListener('click', nextCard);
+        addCardBtn.addEventListener('click', openAddCardModal);
+        closeButton.addEventListener('click', closeAddCardModal);
+        saveCardBtn.addEventListener('click', saveNewCard);
+
+        window.addEventListener('click', (event) => {
+            if (event.target === addCardModal) {
+                closeAddCardModal();
+            }
+        });
+
+        showCard(); // Initial display
+    </script>
+</body>
+</html>
